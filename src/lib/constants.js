@@ -54,6 +54,7 @@ export const features = [
   'ocultarSugestaoDeLobbies',
   'ocultarNotificacaoComplete',
   'autoDarkMode',
+  'removeClutter',
   'autoCompactMode',
   'autoHideFilter',
   'autoInfoPlayer',
