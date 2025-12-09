@@ -4,6 +4,7 @@ export const removeClutter = () => {
   $( '.WorkshopBanner' ).remove();
   $( '.headerPlatform' ).css( 'height', '80px' );
   $( '.lobby-header-ads' ).remove();
+  $( '.SideAdvertisement' ).remove();
   $( '.MainHeader__play' ).css( 'width', '12rem' );
   $( '#leaderboard_strike_button' ).remove();
   $( '.MainHeader__navbar--subscribe' ).remove();
