@@ -13,7 +13,7 @@ const colors = [
 
 const getColor = argVal => ( colors.find( ( { val } ) => ( argVal > val ) ) || colors[0] ).color;
 
-export const buildTimer = ( warmupFinished, targetContainer, timeleft, maxtime = 180 ) => {
+export const buildTimer = ( warmupFinished, targetContainer, timeleft, maxtime = 235 ) => {
 
   const timeUtil = input => `${Math.floor( input / 60 ) > 0 ? `${Math.floor( input / 60 )}min ` : ''}${Math.floor( input % 60 )}s`;
 
