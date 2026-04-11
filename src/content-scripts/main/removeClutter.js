@@ -16,6 +16,10 @@ export const removeClutter = async () => {
     .then( () =>
       $( '#GamersClubCSApp-liveOddsBanner' ).parent().parent().parent().parent().parent().remove()
     );
+  waitForElement( '.sp-ad-wrapper' )
+    .then( () =>
+      $( '.sp-ad-wrapper' ).parent().remove()
+    );
 
   autoClickButtonWarmup();
 };

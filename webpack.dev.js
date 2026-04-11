@@ -3,12 +3,13 @@ const CopyPlugin = require( 'copy-webpack-plugin' );
 const webpack = require( 'webpack' );
 const glob = require( 'glob' );
 
-const contentScripts = name => glob.sync( `./src/content-scripts/${name}/*.js` );
+const normalizeGlob = pattern => glob.sync( pattern ).map( f => f.replace( /\\/g, '/' ).startsWith( './' ) ? f : './' + f );
+const contentScripts = name => normalizeGlob( `./src/content-scripts/${name}/*.js` );
 
 module.exports = {
   mode: 'development',
   entry: {
-    'index': glob.sync( './src/options/*.js' ),
+    'index': normalizeGlob( './src/options/*.js' ),
     'content-scripts/main': contentScripts( 'main' ),
     'content-scripts/lobby': contentScripts( 'lobby' ),
     'content-scripts/missions': contentScripts( 'missions' ),

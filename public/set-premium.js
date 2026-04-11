@@ -1,6 +1,5 @@
 const handler = {
   get( target, prop ) {
-    console.log( 'proxy used' );
     if ( prop === 'isPlayerSubscriber' || prop === 'isSubscriber' ) {
       return true;
     }
