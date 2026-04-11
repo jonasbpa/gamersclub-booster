@@ -13,7 +13,7 @@ const colors = [
 
 const getColor = argVal => ( colors.find( ( { val } ) => ( argVal > val ) ) || colors[0] ).color;
 
-export const buildTimer = ( warmupFinished, targetContainer, timeleft, maxtime = 235 ) => {
+export const buildTimer = ( warmupFinished, targetContainer, timeleft, maxtime = 225 ) => {
 
   const timeUtil = input => `${Math.floor( input / 60 ) > 0 ? `${Math.floor( input / 60 )}min ` : ''}${Math.floor( input % 60 )}s`;
 
@@ -61,7 +61,7 @@ export const partidaInfo = async () => {
             if ( listenGame?.data?.data?.step === 'onServerReady' ) {
 
               if ( needWarmup && !warmupElement ) {
-                buildTimer( warmupFinished, parentDisclaimer, listenGame.data.data.warmupExpiresInSeconds );
+                buildTimer( warmupFinished, parentDisclaimer, listenGame.data.data.warmupExpiresInSeconds + 45 );
               }
               if ( needDisc && !discElement ) {
                 parentDisclaimer.append(

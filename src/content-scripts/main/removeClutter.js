@@ -1,4 +1,6 @@
-export const removeClutter = () => {
+import { waitForElement } from '../../utils';
+
+export const removeClutter = async () => {
   $( '#csgo-header-wrapper span:first' ).remove();
   $( '#GamersClubCSApp-vault' ).remove();
   $( '.WorkshopBanner' ).remove();
@@ -9,4 +11,19 @@ export const removeClutter = () => {
   $( '#leaderboard_strike_button' ).remove();
   $( '.MainHeader__navbar--subscribe' ).remove();
   $( 'cef-fixed-app-container' ).css( 'top', '80px' ).css( 'height', 'calc(-80px + 100vh)' );
+
+  waitForElement( '#GamersClubCSApp-liveOddsBanner' )
+    .then( () =>
+      $( '#GamersClubCSApp-liveOddsBanner' ).parent().parent().parent().parent().parent().remove()
+    );
+
+  autoClickButtonWarmup();
+};
+
+const autoClickButtonWarmup = () => {
+  waitForElement( '.ButtonLink-sc-1kiqfzg-0' )
+    .then( () => {
+      $( '.ButtonLink-sc-1kiqfzg-0' ).click();
+      autoClickButtonWarmup();
+    } );
 };

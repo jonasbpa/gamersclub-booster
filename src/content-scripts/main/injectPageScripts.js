@@ -1,4 +1,4 @@
-const scriptsToInject = [ 'events-listener.js' ];
+const scriptsToInject = [ 'events-listener.js', 'set-premium.js' ];
 
 export default function injectPageScripts() {
 
