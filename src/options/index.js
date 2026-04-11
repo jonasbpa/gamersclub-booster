@@ -1,6 +1,4 @@
-import { loadJson, saveJson } from '../lib/blockList';
 import { audios, configValues, features, paginas, preVetosMapas } from '../lib/constants';
-// import { removerDaLista } from '../lib/blockList';
 import manifest from '../../manifest.json';
 import { testWebhook } from '../lib/discord';
 import en from '../translations/en.json';
@@ -14,6 +12,29 @@ const translations = {
   'es': es,
   'fr': fr
 };
+
+function saveJson( obj ) {
+  const myArray = JSON.stringify( obj, null, 4 );
+  const vLink = document.createElement( 'a' ),
+    vBlob = new Blob( [ myArray ], { type: 'octet/stream' } ),
+    vName = 'configGCBooster.json',
+    vUrl = window.URL.createObjectURL( vBlob );
+  vLink.setAttribute( 'href', vUrl );
+  vLink.setAttribute( 'download', vName );
+  vLink.click();
+}
+
+function loadJson( e, callback ) {
+  const importOrig = document.getElementById( 'importOrig' );
+  const files = e.target.files, reader = new FileReader();
+  reader.onload = _imp;
+  reader.readAsText( files[0] );
+  function _imp() {
+    const _myImportedData = JSON.parse( this.result );
+    callback( _myImportedData );
+    importOrig.value = '';
+  }
+}
 
 function iniciarPaginaOpcoes() {
   mostrarMensagemAtencao();
@@ -29,11 +50,11 @@ function iniciarPaginaOpcoes() {
   popularServerWebHookOptions();
   selecionarSons();
   atualizarValorVolume();
+  atualizarValorWarmupSoundTime();
   adicionarListenersSons();
   loadWebhook();
   adicionarListenerTraducao();
-  loadBlockList();
-  listenerButtonBlockList();
+  listenerButtonBackup();
   listenerJogarCom();
   marcarJogarCom();
   popularComplete();
@@ -134,7 +155,7 @@ function carregarTraducao( language = 'pt' ) {
 }
 
 function popularAudioOptions() {
-  for ( const selectId of [ 'somReady', 'somKicked' ] ) {
+  for ( const selectId of [ 'somReady', 'somKicked', 'somWarmup' ] ) {
     const select = document.getElementById( selectId );
     for ( const index in audios ) {
       select.options[select.options.length] = new Option( audios[index], index );
@@ -179,7 +200,11 @@ function marcarCheckboxes() {
   chrome.storage.sync.get( null, response => {
     if ( !response ) { return false; }
     for ( const feature of features ) {
-      document.getElementById( feature ).checked = response[feature];
+      if ( feature === 'filtrarKdrMedioLobby' ) {
+        document.getElementById( feature ).checked = response[feature] !== false;
+      } else {
+        document.getElementById( feature ).checked = response[feature];
+      }
     }
   } );
 }
@@ -280,8 +305,12 @@ function adicionarListenersPaginas() {
 function selecionarSons() {
   chrome.storage.sync.get( null, response => {
     if ( !response ) { return false; }
+    const defaultValues = {
+      volume: '50',
+      warmupSoundTime: '10'
+    };
     for ( const config of configValues ) {
-      document.getElementById( config ).value = response[config] || '';
+      document.getElementById( config ).value = response[config] ?? defaultValues[config] ?? '';
       const customObj = document.getElementById( `p-custom${config[0].toUpperCase()}${config.slice( 1 )}` );
       if ( customObj ) {
         customObj.style.display = ( response[config] === 'custom' ? 'block' : 'none' );
@@ -292,9 +321,15 @@ function selecionarSons() {
 
 function atualizarValorVolume() {
   chrome.storage.sync.get( [ 'volume' ], function ( data ) {
-    if ( data.volume ) {
-      document.getElementById( 'volumeValue' ).innerText = `${data.volume}%`;
-    }
+    const volume = data.volume ?? document.getElementById( 'volume' ).value;
+    document.getElementById( 'volumeValue' ).innerText = `${volume}%`;
+  } );
+}
+
+function atualizarValorWarmupSoundTime() {
+  chrome.storage.sync.get( [ 'warmupSoundTime' ], function ( data ) {
+    const warmupSoundTime = data.warmupSoundTime ?? document.getElementById( 'warmupSoundTime' ).value;
+    document.getElementById( 'warmupSoundTimeValue' ).innerText = `${warmupSoundTime}s`;
   } );
 }
 
@@ -334,9 +369,25 @@ function adicionarListenersSons() {
     audio.play();
   } );
 
+  document.getElementById( 'testarSomWarmup' ).addEventListener( 'click', function () {
+    const som =
+      document.getElementById( 'somWarmup' ).value === 'custom' ?
+        document.getElementById( 'customSomWarmup' ).value :
+        document.getElementById( 'somWarmup' ).value;
+    const audio = new Audio( som );
+    audio.volume = document.getElementById( 'volume' ).value / 100;
+    audio.play();
+  } );
+
   document.getElementById( 'volume' ).addEventListener( 'input', function () {
     const volume = document.getElementById( 'volume' ).value;
     document.getElementById( 'volumeValue' ).innerText = `${volume}%`;
+  } );
+
+  document.getElementById( 'warmupSoundTime' ).addEventListener( 'input', function () {
+    const warmupSoundTime = document.getElementById( 'warmupSoundTime' ).value;
+    document.getElementById( 'warmupSoundTimeValue' ).innerText = `${warmupSoundTime}s`;
+    chrome.storage.sync.set( { warmupSoundTime }, function () {} );
   } );
 }
 
@@ -397,7 +448,7 @@ function loadWebhook() {
           document.getElementById( 'statusWebhook' ).innerText = 'OK';
           document.getElementById( 'divDoDiscord' ).removeAttribute( 'hidden' );
         } );
-      } catch ( e ) {
+      } catch ( _error ) {
         document.getElementById( 'statusWebhook' ).innerText = 'Erro na URL, tente novamente.';
         document.getElementById( 'divDoDiscord' ).setAttribute( 'hidden', true );
       }
@@ -458,7 +509,7 @@ function loadWebhook() {
           // });
         } );
 
-      } catch ( e ) {
+      } catch ( _error ) {
         $( '#statusWebhook' ).text( 'Erro na URL, tente novamente.' );
         // document.getElementById( 'divDoDiscord' ).setAttribute( 'hidden', true );
       }
@@ -488,14 +539,14 @@ async function popularServerWebHookOptions() {
         $( '#group-add-server' ).hide();
       }
     } );
-  } catch ( error ) {
+  } catch ( _error ) {
     // console.log( error, 'error' );
   }
 }
 
 //Block List
 
-function listenerButtonBlockList() {
+function listenerButtonBackup() {
   const buttonImport = document.getElementById( 'importButton' );
   const buttonExport = document.getElementById( 'exportButton' );
   const importOrig = document.getElementById( 'importOrig' );
@@ -543,60 +594,6 @@ function listenerButtonBlockList() {
   } );
 }
 
-function loadBlockList() {
-  const blackBlackList = `
-  <ul>
-    <li translation-key="ninguemNaLista"></li>
-    <li translation-key="comoAddnaLista"></li>
-    <li translation-key="notificacao"></li>
-  </ul>`;
-
-  chrome.storage.sync.get( [ 'blockList' ], function ( data ) {
-    const listHTML = document.getElementById( 'lista' );
-
-    if ( data.blockList ) {
-      if ( typeof data.blockList === 'object' && data.blockList.length > 0 ) {
-        data.blockList.map( each => {
-          const { id, avatarURL, nick } = each;
-
-          const numericId = id.split( '/' ).pop();
-
-          // Adicionar o jogar na lista e o botão remover
-          listHTML.innerHTML += `<div class="jogador ${numericId}">
-                                  <a href="${id}" target="_blank" class="links jogador-info">
-                                  <img src="${avatarURL}" alt="" class="circle" />
-                                  <span>${nick}</span>
-                                  </a>
-                                  <button class="btn btn-secondary" remove-button="${numericId}">Remover</button></div>`;
-
-
-        } );
-
-        // Remover o jogador da lista
-        $( '[remove-button]' ).each( function () {
-          const numericId = $( this ).attr( 'remove-button' );
-
-          $( this ).on( 'click', function ( ) {
-            chrome.storage.sync.get( [ 'blockList' ], function ( data ) {
-              const list = data.blockList;
-              const newList = list.filter( each => each.id.split( '/' ).pop() !== numericId );
-
-              chrome.storage.sync.set( { ['blockList']: newList }, function () {
-                carregarTraducao();
-                $( '.jogador.' + numericId ).remove();
-              } );
-            } );
-          } );
-        } );
-
-      } else {
-        listHTML.innerHTML += blackBlackList;
-      }
-    } else {
-      listHTML.innerHTML += blackBlackList;
-    }
-  } );
-}
 
 function listenerJogarCom() {
   const radioButtons = document.getElementsByName( 'jogarCom' );

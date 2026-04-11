@@ -5,7 +5,7 @@ import { getUserInfo } from '../../lib/dom';
 const { plID: PLAYER_ID } = getUserInfo();
 const PAGE_SIZE = 20;
 const DEFAULT_MONTHS = 1;
-const CACHE_DURATION = 60 * 60 * 1000;
+const CACHE_DURATION = 20 * 60 * 1000;
 
 async function fetchJSON( url, headers = {} ) {
   try {
@@ -13,9 +13,9 @@ async function fetchJSON( url, headers = {} ) {
     return res.data;
   } catch ( error ) {
     if ( error.response ) {
-      throw new Error( `HTTP error! status: ${error.response.status}` );
+      throw new Error( `HTTP error! status: ${error.response.status}`, { cause: error } );
     } else {
-      throw new Error( `Request failed: ${error.message}` );
+      throw new Error( `Request failed: ${error.message}`, { cause: error } );
     }
   }
 }

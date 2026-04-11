@@ -68,7 +68,8 @@ export const features = [
   'chatFixoDireita',
   'autoKickNegativados',
   'autoCopyLobbyLink',
-  'showStats'
+  'showStats',
+  'filtrarKdrMedioLobby'
 ];
 export const preVetosMapas = [
   {
@@ -120,8 +121,17 @@ export const preVetosMapas = [
   //   codigo: 16
   // }
 ];
-export const configValues = [ 'somReady', 'volume', 'customSomReady', 'somKicked', 'customSomKicked' ];
-export const paginas = [ 'novidades', 'geral', 'mapas', 'lobby', 'complete', 'contato', 'sobre', 'sons', 'integracoes', 'blocklist',
+export const configValues = [
+  'somReady',
+  'volume',
+  'customSomReady',
+  'somKicked',
+  'customSomKicked',
+  'somWarmup',
+  'customSomWarmup',
+  'warmupSoundTime'
+];
+export const paginas = [ 'novidades', 'geral', 'mapas', 'lobby', 'complete', 'contato', 'sobre', 'sons', 'integracoes',
   'backup', 'doacao' ];
 export const audios = {
   '': 'Nenhum',
@@ -144,14 +154,14 @@ export const GC_URL = window.location.hostname;
 
 // Opera 8.0+ (tested on Opera 42.0)
 export const isOpera = ( !!window.opr && !!opr.addons ) || !!window.opera ||
-                navigator.userAgent.indexOf( ' OPR/' ) >= 0;
+  navigator.userAgent.indexOf( ' OPR/' ) >= 0;
 
 // Firefox 1.0+ (tested on Firefox 45 - 53)
 export const isFirefox = typeof InstallTrigger !== 'undefined';
 
 // Internet Explorer 6-11
 //   Untested on IE (of course). Here because it shows some logic for isEdge.
-export const isIE = /*@cc_on!@*/false || !!document.documentMode;
+export const isIE = !!document.documentMode;
 
 // Edge 20+ (tested on Edge 38.14393.0.0)
 export const isEdge = !isIE && !!window.StyleMedia;
@@ -180,6 +190,7 @@ export const lobbyMapSuggestionsConsts = {
   MONTH_LIMIT: 3,
   CACHE_KEY_PREFIX: 'gc_player_cache_',
   CACHE_TTL: 2 * 24 * 60 * 60 * 1000,
+  DEBUG_FAKE_DATA: false,
   AVAILABLE_MAPS: [
     'de_mirage',
     'de_dust2',
@@ -198,4 +209,19 @@ export const lobbyMapSuggestionsConsts = {
     'de_cache_old',
     'de_tuscan'
   ]
+};
+
+export const showPlayerSoloStatsConsts = {
+  PLAYERS_IDS_DEBUG: [
+    210696,
+    1309815,
+    2607959,
+    2663102,
+    282415,
+    2329412,
+    2530242,
+    2620770
+  ],
+  DEBUG_PLAYERS: false,
+  MONTH_LIMIT: 1
 };

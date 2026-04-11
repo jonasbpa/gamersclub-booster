@@ -4,7 +4,8 @@ const {
   PLAYERS_PER_TEAM,
   AVAILABLE_MAPS,
   CACHE_KEY_PREFIX,
-  CACHE_TTL
+  CACHE_TTL,
+  DEBUG_FAKE_DATA
 } = lobbyMapSuggestionsConsts;
 
 function loadCache( playerId ) {
@@ -253,6 +254,10 @@ export async function lobbyMapSuggestions( partidaId = '' ) {
   `;
   document.head.appendChild( style );
 
+  const COLOR_A_SOLID = 'oklch(62% 0.25 292)'; // roxo intenso neon
+  const COLOR_B_SOLID = 'oklch(70% 0.22 50)'; // laranja quente neon
+  const COLOR_AB_SOLID = 'oklch(72% 0.18 180)'; // teal/esmeralda
+
   function criarBadge( texto, team ) {
     const badge = document.createElement( 'span' );
     badge.classList.add( 'gc-badge' );
@@ -261,14 +266,15 @@ export async function lobbyMapSuggestions( partidaId = '' ) {
     badge.style.justifyContent = 'center';
     badge.style.fontSize = '12px';
     badge.style.fontWeight = 'bold';
-    badge.style.backgroundColor = team === 'a' ? '#2196fd70' : '#7db720b3';
+    const borderColor = team === 'a' ? COLOR_A_SOLID : COLOR_B_SOLID;
+    badge.style.backgroundColor = `color-mix(in oklch, ${borderColor} 90%, transparent)`;
     badge.style.color = '#fff';
     badge.style.userSelect = 'none';
     badge.style.textAlign = 'center';
     badge.innerText = texto;
     badge.style.padding = '3px 8px';
     badge.style.height = '25px';
-    badge.style.border = `1px solid ${team === 'a' ? '#2196fd' : '#7db720'}`;
+    badge.style.border = `1px solid ${borderColor}`;
     return badge;
   }
 
@@ -301,14 +307,22 @@ export async function lobbyMapSuggestions( partidaId = '' ) {
       display: 'none'
     } );
 
+    const teamAElement = document.querySelector( '.PlayerIdentity__nicknameBadges--left .PlayerIdentityNickname__nicknameText' );
+    const teamBElement = document.querySelector( '.PlayerIdentity__nicknameBadges--right .PlayerIdentityNickname__nicknameText' );
+
+    const nomeTime = team === 'a' ?
+      ( teamAElement?.textContent?.trim() || lobbyDataParaCalculo.timeA[0]?.nome || 'Time A' ) :
+      ( teamBElement?.textContent?.trim() || lobbyDataParaCalculo.timeB[0]?.nome || 'Time B' );
+    const tooltipColor = team === 'a' ? COLOR_A_SOLID : COLOR_B_SOLID;
+
     tooltip.innerHTML = `
-    <div style="font-weight:600; margin-bottom:5px; text-align:center;">
-      ${team === 'a' ? 'Time A' : 'Time B'} – ${mapName}
+    <div style="font-weight:600; margin-bottom:5px; text-align:center; color:${tooltipColor};">
+      ${nomeTime} – ${mapName}
     </div>
     ${jogadores.length > 0 ? jogadores.map( j => `
       <div style="margin-bottom:4px;">
         <strong>- ${j.nome}</strong>: ${j.vitorias}V / ${j.partidas}P 
-        <span style="color:${team === 'a' ? '#2196fd' : '#7db720'}">(${j.winRate.toFixed( 1 )}%)</span>
+        <span style="color:${tooltipColor}">(${j.winRate.toFixed( 1 )}%)</span>
       </div>
     ` ).join( '' ) : '<div style="margin-bottom:4px; color: #999;">Sem dados disponíveis</div>'}
   `;
@@ -345,6 +359,45 @@ export async function lobbyMapSuggestions( partidaId = '' ) {
 
     const { lobbyDataParaCalculo } = result;
 
+    if ( DEBUG_FAKE_DATA ) {
+      console.log( '[GC-BOOSTER] MODO DEBUG ATIVO — usando dados simulados' );
+      lobbyDataParaCalculo.timeA = Array.from( { length: 5 } ).map( ( _, i ) => ( {
+        id: i + 1,
+        nome: 'Player A' + i,
+        mapas: AVAILABLE_MAPS.map( map => {
+          const partidas = 20;
+          const vitorias = Math.floor( Math.random() * ( partidas + 1 ) );
+          const winRate = parseFloat( ( ( vitorias / partidas ) * 100 ).toFixed( 2 ) );
+          return {
+            nome: map,
+            partidas,
+            vitorias,
+            winRate
+          };
+
+        } )
+      } ) );
+
+      lobbyDataParaCalculo.timeB = Array.from( { length: 5 } ).map( ( _, i ) => ( {
+        id: i + 10,
+        nome: 'Player B' + i,
+        mapas: AVAILABLE_MAPS.map( map => {
+          const partidas = 20;
+          const vitorias = Math.floor( Math.random() * ( partidas + 1 ) );
+          const winRate = parseFloat( ( ( vitorias / partidas ) * 100 ).toFixed( 2 ) );
+          return {
+            nome: map,
+            partidas,
+            vitorias,
+            winRate
+          };
+
+        } )
+      } ) );
+    }
+
+
+
     const { recomendacoes, estatisticasPorMapa } = calcularSugestoesDeVeto(
       lobbyDataParaCalculo,
       mapasVisiveis
@@ -366,6 +419,60 @@ export async function lobbyMapSuggestions( partidaId = '' ) {
 
       const mapName = mapTitleEl.textContent.trim();
       const stats = estatisticasPorMapa[mapName];
+
+      let suggestionText = null;
+      let color = null;
+
+      const teamAElement = document.querySelector( '.PlayerIdentity__nicknameBadges--left .PlayerIdentityNickname__nicknameText' );
+      const teamBElement = document.querySelector( '.PlayerIdentity__nicknameBadges--right .PlayerIdentityNickname__nicknameText' );
+
+      const nomeTimeA = teamAElement?.textContent?.trim() || lobbyDataParaCalculo.timeA[0]?.nome || 'Time A';
+      const nomeTimeB = teamBElement?.textContent?.trim() || lobbyDataParaCalculo.timeB[0]?.nome || 'Time B';
+
+      if ( recomendacoes.time_A.pick.mapa === recomendacoes.time_B.pick.mapa && mapName === recomendacoes.time_A.pick.mapa ) {
+        suggestionText = `PICK: ${nomeTimeA} & ${nomeTimeB}`;
+        color = COLOR_AB_SOLID;
+      } else if ( mapName === recomendacoes.time_A.pick.mapa ) {
+        suggestionText = `PICK: ${nomeTimeA}`;
+        color = COLOR_A_SOLID;
+      } else if ( mapName === recomendacoes.time_B.pick.mapa ) {
+        suggestionText = `PICK: ${nomeTimeB}`;
+        color = COLOR_B_SOLID;
+      }
+
+      if ( suggestionText ) {
+        card.querySelectorAll( '.gc-suggestion-badge' ).forEach( e => e.remove() );
+
+        const sug = document.createElement( 'div' );
+        sug.classList.add( 'gc-suggestion-badge' );
+
+        Object.assign( sug.style, {
+          position: 'absolute',
+          top: '-15px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          borderRadius: '4px',
+          background: `color-mix(in oklch, ${color} 90%, transparent)`,
+          border: `1px solid ${color}`,
+          padding: '4px 10px',
+          fontSize: '11px',
+          fontWeight: '700',
+          color: '#fff',
+          zIndex: '1000',
+          width: 'max-content',
+          maxWidth: '160px',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          letterSpacing: '0.05em'
+        } );
+
+        sug.innerText = suggestionText;
+        card.style.position = 'relative';
+        card.style.boxShadow = `0 0 18px 3px color-mix(in oklch, ${color} 55%, transparent), 0 0 6px 1px ${color}`;
+        card.style.outline = `1px solid color-mix(in oklch, ${color} 70%, transparent)`;
+        card.parentNode.insertBefore( sug, card );
+      }
 
       const badgesContainer = document.createElement( 'div' );
       badgesContainer.classList.add( 'gc-map-badges' );
@@ -401,45 +508,58 @@ export async function lobbyMapSuggestions( partidaId = '' ) {
       wrapper.style.fontWeight = '600';
       wrapper.style.gap = '15px';
 
-      const pickMapaA = recomendacoes.time_A.pick.mapa;
-      const pickMapaB = recomendacoes.time_B.pick.mapa;
-
-      const pickStatsA = estatisticasPorMapa[pickMapaA];
-      const pickStatsB = estatisticasPorMapa[pickMapaB];
-
-      const percentA = pickStatsA ? pickStatsA.timeA.toFixed( 1 ) : 0;
-      const percentB = pickStatsB ? pickStatsB.timeB.toFixed( 1 ) : 0;
-
-      const boxInfo = document.createElement( 'div' );
-      boxInfo.innerHTML = `
-        <div style="color: #fff; text-align: center; font-size: 14px; margin-bottom: 10px; font-weight: 400; line-height: 1.5;">
-          Confira abaixo as sugestões de <strong>pick</strong> com base no desempenho dos últimos <strong>90 dias</strong>.
-          <br>Os resultados consideram a <strong>taxa de vitórias</strong> calculada a partir das partidas registradas por jogador.
-        </div>
-      `;
-
-      const cardWrapper = document.createElement( 'div' );
-      cardWrapper.style.display = 'flex';
-      cardWrapper.style.justifyContent = 'space-between';
-
-      const cardA = document.createElement( 'div' );
-      cardA.innerHTML = `
-        <div style="color:#2196fd;">Pick Sugerido Time A</div>
-        <div>${pickMapaA} (${percentA}%)</div>
-      `;
-
-      const cardB = document.createElement( 'div' );
-      cardB.innerHTML = `
-        <div style="color:#7db720;">Pick Sugerido Time B</div>
-        <div>${pickMapaB} (${percentB}%)</div>
-      `;
-
-      cardWrapper.appendChild( cardA );
-      cardWrapper.appendChild( cardB );
-
-      wrapper.appendChild( boxInfo );
-      wrapper.appendChild( cardWrapper );
       contentContainer.insertAdjacentElement( 'beforebegin', wrapper );
+    }
+
+    const teamContainers = document.querySelectorAll( '.kucNpa' );
+    document.querySelectorAll( '.gc-team-indicator' ).forEach( el => el.remove() );
+
+    if ( teamContainers.length >= 1 ) {
+      const createIndicator = color => {
+        const container = document.createElement( 'div' );
+        container.classList.add( 'gc-team-indicator' );
+        Object.assign( container.style, {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px',
+          marginTop: '4px',
+          width: '40%'
+        } );
+
+        const bar = document.createElement( 'div' );
+        Object.assign( bar.style, {
+          height: '4px',
+          width: '100%',
+          backgroundColor: `color-mix(in oklch, ${color} 90%, transparent)`,
+          borderRadius: '4px',
+          boxShadow: `0 0 12px ${color}80`,
+          border: `1px solid color-mix(in oklch, ${color} 40%, transparent)`
+        } );
+
+        const label = document.createElement( 'span' );
+        label.innerText = 'Cor do Time';
+        Object.assign( label.style, {
+          fontSize: '10px',
+          fontWeight: '700',
+          color: `color-mix(in oklch, ${color} 85%, white)`,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          userSelect: 'none',
+          lineHeight: '1'
+        } );
+
+        container.appendChild( bar );
+        container.appendChild( label );
+        return container;
+      };
+
+      if ( teamContainers[0] ) {
+        teamContainers[0].insertAdjacentElement( 'afterend', createIndicator( COLOR_A_SOLID ) );
+      }
+      if ( teamContainers[1] ) {
+        teamContainers[1].insertAdjacentElement( 'afterend', createIndicator( COLOR_B_SOLID ) );
+      }
     }
 
     console.log( '[GC-BOOSTER] Estatísticas e picks adicionados com sucesso.' );
